@@ -20,7 +20,9 @@ class AlertTriageEngine:
             "high": 12,
             "critical": 15
         }
-        self.admin_accounts = ['admin', 'administrator', 'root']
+        self.admin_accounts = ['admin', 'administrator', 'root', 'sa', 'sysadmin']
+        self.service_accounts = ['svc_', 'service_', 'sa_', 'srv_']
+        self.guest_accounts = ['guest', 'anonymous', 'temp']
         
         # Expanded Windows Event ID mappings
         self.event_scores = {
@@ -38,7 +40,7 @@ class AlertTriageEngine:
         # Known suspicious IP ranges for testing
         self.suspicious_ranges = ['203.0.113.', '198.51.100.', '185.220.100.']
         
-        logger.info("Alert triage engine initialized with event mappings and IP analysis")
+        logger.info("Alert triage engine initialized with comprehensive account analysis")
     
     def is_internal_ip(self, ip):
         """Check if IP address is in internal ranges"""
@@ -54,6 +56,44 @@ class AlertTriageEngine:
         ]
         
         return any(re.match(pattern, ip) for pattern in internal_patterns)
+    
+    def analyze_account(self, alert):
+        """Analyze user account for risk factors"""
+        username = alert.get('username', '').lower()
+        analysis = {'score': 0, 'notes': []}
+        
+        if not username:
+            return analysis
+            
+        # Administrative account analysis
+        if any(admin in username for admin in self.admin_accounts):
+            analysis['score'] += 4
+            analysis['notes'].append(f"Administrative account targeted: {alert.get('username')}")
+            
+        # Service account patterns
+        elif any(username.startswith(svc) for svc in self.service_accounts):
+            analysis['score'] += 3
+            analysis['notes'].append(f"Service account activity: {alert.get('username')}")
+            
+        # Guest/anonymous accounts
+        elif username in self.guest_accounts:
+            analysis['score'] += 3
+            analysis['notes'].append(f"Guest/anonymous account activity: {alert.get('username')}")
+            
+        # Check for suspicious account patterns
+        elif len(username) <= 3:
+            analysis['score'] += 2
+            analysis['notes'].append(f"Short username pattern: {alert.get('username')}")
+            
+        # Domain admin patterns (simplified)
+        elif 'domain' in username or 'enterprise' in username:
+            analysis['score'] += 5
+            analysis['notes'].append(f"Domain-level account: {alert.get('username')}")
+            
+        else:
+            analysis['notes'].append(f"Standard user account: {alert.get('username')}")
+            
+        return analysis
     
     def analyze_source_ip(self, alert):
         """Analyze source IP address for threat indicators"""
@@ -108,12 +148,11 @@ class AlertTriageEngine:
         risk_score += ip_analysis['score']
         analysis_notes.extend(ip_analysis['notes'])
         
-        # Check for admin accounts
-        username = alert.get('username', '').lower()
-        if any(admin in username for admin in self.admin_accounts):
-            risk_score += 3
-            analysis_notes.append(f"Administrative account targeted: {alert.get('username')}")
-            
+        # Account analysis
+        account_analysis = self.analyze_account(alert)
+        risk_score += account_analysis['score']
+        analysis_notes.extend(account_analysis['notes'])
+        
         return risk_score, analysis_notes
     
     def get_priority(self, risk_score):
@@ -130,20 +169,22 @@ class AlertTriageEngine:
 if __name__ == "__main__":
     engine = AlertTriageEngine()
     
-    # Test with alerts including IP analysis
+    # Test with various account types
     test_alerts = [
-        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45'},  # External + suspicious
-        {'event_id': '4720', 'username': 'newuser', 'source_ip': '10.0.1.50'},  # Internal
-        {'event_id': '4625', 'username': 'jdoe', 'source_ip': '185.220.100.10'},  # External + suspicious
-        {'event_id': '4624', 'username': 'jdoe', 'source_ip': '192.168.1.25'}  # Internal
+        {'event_id': '4625', 'username': 'administrator', 'source_ip': '203.0.113.45'},
+        {'event_id': '4624', 'username': 'svc_backup', 'source_ip': '10.0.1.50'},
+        {'event_id': '4720', 'username': 'guest', 'source_ip': '192.168.1.25'},
+        {'event_id': '4672', 'username': 'domainadmin', 'source_ip': '10.0.1.10'},
+        {'event_id': '4625', 'username': 'jdoe', 'source_ip': '10.0.1.100'}
     ]
     
-    print("IP Address Risk Analysis Results:")
+    print("Account Analysis Results:")
     print("=" * 40)
     for i, alert in enumerate(test_alerts):
         score, notes = engine.analyze_alert(alert)
         priority = engine.get_priority(score)
         print(f"Alert {i+1}: Score={score}, Priority={priority}")
+        print(f"  User: {alert['username']}, IP: {alert['source_ip']}")
         for note in notes:
             print(f"  - {note}")
         print()
