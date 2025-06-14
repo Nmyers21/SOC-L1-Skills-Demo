@@ -6,7 +6,8 @@ Author: Noah Myers
 import json
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import defaultdict
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -24,6 +25,10 @@ class AlertTriageEngine:
         self.service_accounts = ['svc_', 'service_', 'sa_', 'srv_']
         self.guest_accounts = ['guest', 'anonymous', 'temp']
         
+        # Correlation thresholds
+        self.failed_logon_threshold = 5
+        self.time_window_minutes = 10
+        
         # Expanded Windows Event ID mappings
         self.event_scores = {
             '4625': {'score': 3, 'description': 'Failed authentication attempt'},
@@ -40,7 +45,102 @@ class AlertTriageEngine:
         # Known suspicious IP ranges for testing
         self.suspicious_ranges = ['203.0.113.', '198.51.100.', '185.220.100.']
         
-        logger.info("Alert triage engine initialized with comprehensive account analysis")
+        logger.info("Alert triage engine initialized with correlation analysis")
+    
+    def correlate_alerts(self, alerts):
+        """Perform correlation analysis across multiple alerts"""
+        correlations = {
+            'brute_force_attacks': [],
+            'privilege_escalation_chains': [],
+            'lateral_movement': []
+        }
+        
+        # Group alerts for correlation
+        ip_events = defaultdict(list)
+        user_events = defaultdict(list)
+        
+        for alert in alerts:
+            if alert.get('source_ip'):
+                ip_events[alert['source_ip']].append(alert)
+            if alert.get('username'):
+                user_events[alert['username']].append(alert)
+        
+        # Detect brute force attacks
+        correlations['brute_force_attacks'] = self.detect_brute_force(ip_events)
+        
+        # Detect privilege escalation chains
+        correlations['privilege_escalation_chains'] = self.detect_privilege_escalation(alerts)
+        
+        # Detect lateral movement
+        correlations['lateral_movement'] = self.detect_lateral_movement(user_events)
+        
+        return correlations
+    
+    def detect_brute_force(self, ip_events):
+        """Detect brute force attack patterns"""
+        attacks = []
+        
+        for ip, events in ip_events.items():
+            failed_logons = [e for e in events if e.get('event_id') == '4625']
+            
+            if len(failed_logons) >= self.failed_logon_threshold:
+                targeted_accounts = list(set(e.get('username', '') for e in failed_logons))
+                
+                attacks.append({
+                    'attack_type': 'brute_force',
+                    'source_ip': ip,
+                    'failed_attempts': len(failed_logons),
+                    'targeted_accounts': targeted_accounts,
+                    'severity': 'HIGH' if len(failed_logons) >= 10 else 'MEDIUM'
+                })
+                
+        return attacks
+    
+    def detect_privilege_escalation(self, alerts):
+        """Detect privilege escalation chains"""
+        escalations = []
+        
+        # Look for privilege assignment events
+        priv_events = [a for a in alerts if a.get('event_id') == '4672']
+        
+        for priv_event in priv_events:
+            # Check if user had other activity before privilege assignment
+            username = priv_event.get('username', '')
+            related_events = [
+                a for a in alerts 
+                if a.get('username') == username and a != priv_event
+            ]
+            
+            if related_events:
+                escalations.append({
+                    'attack_type': 'privilege_escalation',
+                    'username': username,
+                    'hostname': priv_event.get('hostname', ''),
+                    'related_events': len(related_events),
+                    'severity': 'CRITICAL'
+                })
+                
+        return escalations
+    
+    def detect_lateral_movement(self, user_events):
+        """Detect lateral movement patterns"""
+        movements = []
+        
+        for user, events in user_events.items():
+            # Look for successful logons across multiple hosts
+            successful_logons = [e for e in events if e.get('event_id') == '4624']
+            unique_hosts = set(e.get('hostname', '') for e in successful_logons if e.get('hostname'))
+            
+            if len(unique_hosts) > 2:  # User on 3+ different systems
+                movements.append({
+                    'attack_type': 'lateral_movement',
+                    'username': user,
+                    'host_count': len(unique_hosts),
+                    'hosts': list(unique_hosts),
+                    'severity': 'HIGH'
+                })
+                
+        return movements
     
     def is_internal_ip(self, ip):
         """Check if IP address is in internal ranges"""
@@ -169,22 +269,34 @@ class AlertTriageEngine:
 if __name__ == "__main__":
     engine = AlertTriageEngine()
     
-    # Test with various account types
+    # Test correlation with sample attack scenarios
     test_alerts = [
-        {'event_id': '4625', 'username': 'administrator', 'source_ip': '203.0.113.45'},
-        {'event_id': '4624', 'username': 'svc_backup', 'source_ip': '10.0.1.50'},
-        {'event_id': '4720', 'username': 'guest', 'source_ip': '192.168.1.25'},
-        {'event_id': '4672', 'username': 'domainadmin', 'source_ip': '10.0.1.10'},
-        {'event_id': '4625', 'username': 'jdoe', 'source_ip': '10.0.1.100'}
+        # Brute force scenario
+        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
+        {'event_id': '4625', 'username': 'administrator', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
+        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
+        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
+        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
+        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
+        
+        # Privilege escalation scenario
+        {'event_id': '4624', 'username': 'jdoe', 'source_ip': '10.0.1.100', 'hostname': 'WS02'},
+        {'event_id': '4672', 'username': 'jdoe', 'source_ip': '10.0.1.100', 'hostname': 'WS02'},
+        
+        # Lateral movement scenario
+        {'event_id': '4624', 'username': 'bwilson', 'source_ip': '10.0.1.50', 'hostname': 'WS03'},
+        {'event_id': '4624', 'username': 'bwilson', 'source_ip': '10.0.1.50', 'hostname': 'WS04'},
+        {'event_id': '4624', 'username': 'bwilson', 'source_ip': '10.0.1.50', 'hostname': 'WS05'}
     ]
     
-    print("Account Analysis Results:")
+    print("Correlation Analysis Results:")
     print("=" * 40)
-    for i, alert in enumerate(test_alerts):
-        score, notes = engine.analyze_alert(alert)
-        priority = engine.get_priority(score)
-        print(f"Alert {i+1}: Score={score}, Priority={priority}")
-        print(f"  User: {alert['username']}, IP: {alert['source_ip']}")
-        for note in notes:
-            print(f"  - {note}")
-        print()
+    
+    correlations = engine.correlate_alerts(test_alerts)
+    
+    for attack_type, attacks in correlations.items():
+        if attacks:
+            print(f"{attack_type.replace('_', ' ').title()}:")
+            for attack in attacks:
+                print(f"  - {attack}")
+            print()
