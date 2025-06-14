@@ -29,23 +29,52 @@ class AlertTriageEngine:
         self.failed_logon_threshold = 5
         self.time_window_minutes = 10
         
-        # Expanded Windows Event ID mappings
+        # MITRE ATT&CK technique mappings
+        self.mitre_mapping = {
+            'brute_force': 'T1110.001',      # Password Guessing
+            'privilege_escalation': 'T1068', # Exploitation for Privilege Escalation
+            'lateral_movement': 'T1021',     # Remote Services
+            'account_creation': 'T1136.001', # Create Local Account
+            'credential_access': 'T1110',    # Brute Force
+            'persistence': 'T1547.001',     # Registry Run Keys
+            'powershell_execution': 'T1059.001', # PowerShell
+            'command_control': 'T1071.001'   # Web Protocols
+        }
+        
+        # Expanded Windows Event ID mappings with MITRE techniques
         self.event_scores = {
-            '4625': {'score': 3, 'description': 'Failed authentication attempt'},
-            '4624': {'score': 1, 'description': 'Successful logon'},
-            '4672': {'score': 5, 'description': 'Special privileges assigned'},
-            '4648': {'score': 3, 'description': 'Explicit credential use'},
-            '4720': {'score': 6, 'description': 'User account created'},
-            '4688': {'score': 2, 'description': 'Process creation'},
-            '4732': {'score': 4, 'description': 'Member added to security group'},
-            '3': {'score': 3, 'description': 'Network connection (Sysmon)'},
-            '11': {'score': 2, 'description': 'File creation (Sysmon)'}
+            '4625': {'score': 3, 'description': 'Failed authentication attempt', 'mitre': 'T1110.001'},
+            '4624': {'score': 1, 'description': 'Successful logon', 'mitre': 'T1078'},
+            '4672': {'score': 5, 'description': 'Special privileges assigned', 'mitre': 'T1068'},
+            '4648': {'score': 3, 'description': 'Explicit credential use', 'mitre': 'T1078'},
+            '4720': {'score': 6, 'description': 'User account created', 'mitre': 'T1136.001'},
+            '4688': {'score': 2, 'description': 'Process creation', 'mitre': 'T1059'},
+            '4732': {'score': 4, 'description': 'Member added to security group', 'mitre': 'T1098'},
+            '3': {'score': 3, 'description': 'Network connection (Sysmon)', 'mitre': 'T1071.001'},
+            '11': {'score': 2, 'description': 'File creation (Sysmon)', 'mitre': 'T1105'}
         }
         
         # Known suspicious IP ranges for testing
         self.suspicious_ranges = ['203.0.113.', '198.51.100.', '185.220.100.']
         
-        logger.info("Alert triage engine initialized with correlation analysis")
+        logger.info("Alert triage engine initialized with MITRE ATT&CK mapping")
+    
+    def get_mitre_techniques(self, alert):
+        """Extract MITRE ATT&CK techniques for an alert"""
+        techniques = []
+        
+        # Get technique from event ID mapping
+        event_id = str(alert.get('event_id', ''))
+        if event_id in self.event_scores:
+            mitre_technique = self.event_scores[event_id].get('mitre')
+            if mitre_technique:
+                techniques.append(mitre_technique)
+        
+        # Add additional techniques based on alert content
+        if alert.get('process_name', '').lower() == 'powershell.exe':
+            techniques.append(self.mitre_mapping['powershell_execution'])
+            
+        return list(set(techniques))  # Remove duplicates
     
     def correlate_alerts(self, alerts):
         """Perform correlation analysis across multiple alerts"""
@@ -91,6 +120,7 @@ class AlertTriageEngine:
                     'source_ip': ip,
                     'failed_attempts': len(failed_logons),
                     'targeted_accounts': targeted_accounts,
+                    'mitre_technique': self.mitre_mapping['brute_force'],
                     'severity': 'HIGH' if len(failed_logons) >= 10 else 'MEDIUM'
                 })
                 
@@ -117,6 +147,7 @@ class AlertTriageEngine:
                     'username': username,
                     'hostname': priv_event.get('hostname', ''),
                     'related_events': len(related_events),
+                    'mitre_technique': self.mitre_mapping['privilege_escalation'],
                     'severity': 'CRITICAL'
                 })
                 
@@ -137,6 +168,7 @@ class AlertTriageEngine:
                     'username': user,
                     'host_count': len(unique_hosts),
                     'hosts': list(unique_hosts),
+                    'mitre_technique': self.mitre_mapping['lateral_movement'],
                     'severity': 'HIGH'
                 })
                 
@@ -228,6 +260,10 @@ class AlertTriageEngine:
             event_info = self.event_scores[event_id]
             analysis['score'] = event_info['score']
             analysis['notes'].append(f"Event ID {event_id}: {event_info['description']}")
+            
+            # Add MITRE technique info
+            if 'mitre' in event_info:
+                analysis['notes'].append(f"MITRE ATT&CK: {event_info['mitre']}")
         else:
             analysis['notes'].append(f"Unknown Event ID: {event_id}")
             
@@ -253,6 +289,11 @@ class AlertTriageEngine:
         risk_score += account_analysis['score']
         analysis_notes.extend(account_analysis['notes'])
         
+        # Add MITRE techniques
+        techniques = self.get_mitre_techniques(alert)
+        if techniques:
+            analysis_notes.append(f"MITRE techniques: {', '.join(techniques)}")
+        
         return risk_score, analysis_notes
     
     def get_priority(self, risk_score):
@@ -269,34 +310,25 @@ class AlertTriageEngine:
 if __name__ == "__main__":
     engine = AlertTriageEngine()
     
-    # Test correlation with sample attack scenarios
+    # Test with MITRE technique mapping
     test_alerts = [
-        # Brute force scenario
         {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
-        {'event_id': '4625', 'username': 'administrator', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
-        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
-        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
-        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
-        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
-        
-        # Privilege escalation scenario
-        {'event_id': '4624', 'username': 'jdoe', 'source_ip': '10.0.1.100', 'hostname': 'WS02'},
         {'event_id': '4672', 'username': 'jdoe', 'source_ip': '10.0.1.100', 'hostname': 'WS02'},
-        
-        # Lateral movement scenario
-        {'event_id': '4624', 'username': 'bwilson', 'source_ip': '10.0.1.50', 'hostname': 'WS03'},
-        {'event_id': '4624', 'username': 'bwilson', 'source_ip': '10.0.1.50', 'hostname': 'WS04'},
-        {'event_id': '4624', 'username': 'bwilson', 'source_ip': '10.0.1.50', 'hostname': 'WS05'}
+        {'event_id': '4720', 'username': 'newuser', 'source_ip': '10.0.1.50', 'hostname': 'WS03'},
+        {'event_id': '4688', 'username': 'analyst', 'source_ip': '10.0.1.25', 'hostname': 'WS04', 'process_name': 'powershell.exe'}
     ]
     
-    print("Correlation Analysis Results:")
+    print("MITRE ATT&CK Technique Analysis:")
     print("=" * 40)
     
-    correlations = engine.correlate_alerts(test_alerts)
-    
-    for attack_type, attacks in correlations.items():
-        if attacks:
-            print(f"{attack_type.replace('_', ' ').title()}:")
-            for attack in attacks:
-                print(f"  - {attack}")
-            print()
+    for i, alert in enumerate(test_alerts):
+        score, notes = engine.analyze_alert(alert)
+        priority = engine.get_priority(score)
+        techniques = engine.get_mitre_techniques(alert)
+        
+        print(f"Alert {i+1}: Score={score}, Priority={priority}")
+        print(f"  Event: {alert['event_id']}, User: {alert['username']}")
+        print(f"  MITRE Techniques: {', '.join(techniques) if techniques else 'None'}")
+        for note in notes:
+            print(f"  - {note}")
+        print()
