@@ -57,7 +57,162 @@ class AlertTriageEngine:
         # Known suspicious IP ranges for testing
         self.suspicious_ranges = ['203.0.113.', '198.51.100.', '185.220.100.']
         
-        logger.info("Alert triage engine initialized with MITRE ATT&CK mapping")
+        logger.info("Alert triage engine initialized with incident reporting")
+    
+    def generate_incident_report(self, alert, risk_score, analysis_notes, priority):
+        """Generate professional incident report for SOC documentation"""
+        incident_id = f"INC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
+        report = {
+            'incident_metadata': {
+                'incident_id': incident_id,
+                'created_at': datetime.now().isoformat(),
+                'analyst': 'SOC L1 Analyst',
+                'priority': priority,
+                'risk_score': f"{risk_score}/20",
+                'status': 'OPEN',
+                'classification': self.classify_incident(alert, analysis_notes)
+            },
+            
+            'alert_details': {
+                'timestamp': alert.get('timestamp', datetime.now().isoformat()),
+                'event_id': alert.get('event_id', ''),
+                'source_ip': alert.get('source_ip', ''),
+                'username': alert.get('username', ''),
+                'hostname': alert.get('hostname', ''),
+                'description': alert.get('description', 'Security event detected')
+            },
+            
+            'technical_analysis': {
+                'findings': analysis_notes,
+                'threat_indicators': self.extract_iocs(alert),
+                'mitre_techniques': self.get_mitre_techniques(alert),
+                'affected_systems': [alert.get('hostname', 'Unknown')],
+                'attack_stage': self.determine_attack_stage(alert)
+            },
+            
+            'escalation_criteria': {
+                'escalate_to_l2': priority in ['CRITICAL', 'HIGH'],
+                'escalation_reason': f"Priority {priority} incident requires L2 analysis",
+                'sla_response_time': self.get_sla_time(priority),
+                'notification_required': priority == 'CRITICAL'
+            },
+            
+            'recommended_actions': self.get_recommended_actions(priority, analysis_notes),
+            
+            'investigation_notes': (
+                f"SOC L1 triage completed. Risk assessment: {risk_score}/20 points. "
+                f"Priority classification: {priority}. "
+                f"{'Escalation required.' if priority in ['CRITICAL', 'HIGH'] else 'Standard monitoring.'}"
+            )
+        }
+        
+        return report
+    
+    def classify_incident(self, alert, notes):
+        """Classify incident type based on analysis"""
+        event_id = alert.get('event_id', '')
+        
+        if event_id == '4625' or any('failed' in note.lower() for note in notes):
+            return 'Brute Force Attack'
+        elif event_id == '4672' or any('privilege' in note.lower() for note in notes):
+            return 'Privilege Escalation'
+        elif event_id == '4720':
+            return 'Account Creation'
+        elif any('external ip' in note.lower() for note in notes):
+            return 'External Access Attempt'
+        else:
+            return 'Security Event'
+    
+    def extract_iocs(self, alert):
+        """Extract Indicators of Compromise from alert"""
+        iocs = []
+        
+        # IP addresses
+        source_ip = alert.get('source_ip', '')
+        if source_ip and not self.is_internal_ip(source_ip):
+            iocs.append(f"IP: {source_ip}")
+            
+        # Usernames
+        username = alert.get('username', '')
+        if username and any(admin in username.lower() for admin in self.admin_accounts):
+            iocs.append(f"Admin Account: {username}")
+            
+        # Hostnames
+        hostname = alert.get('hostname', '')
+        if hostname:
+            iocs.append(f"Host: {hostname}")
+            
+        # Process names
+        process_name = alert.get('process_name', '')
+        if process_name:
+            iocs.append(f"Process: {process_name}")
+            
+        return iocs
+    
+    def determine_attack_stage(self, alert):
+        """Determine attack stage based on MITRE technique"""
+        event_id = alert.get('event_id', '')
+        
+        if event_id == '4625':
+            return 'Initial Access'
+        elif event_id == '4672':
+            return 'Privilege Escalation'
+        elif event_id == '4720':
+            return 'Persistence'
+        elif event_id == '4624':
+            return 'Lateral Movement'
+        else:
+            return 'Unknown'
+    
+    def get_sla_time(self, priority):
+        """Get SLA response time based on priority"""
+        sla_times = {
+            'CRITICAL': '15 minutes',
+            'HIGH': '30 minutes',
+            'MEDIUM': '2 hours',
+            'LOW': '8 hours'
+        }
+        return sla_times.get(priority, '8 hours')
+    
+    def get_recommended_actions(self, priority, notes):
+        """Generate response recommendations based on analysis"""
+        actions = []
+        
+        if priority == 'CRITICAL':
+            actions.extend([
+                "Escalate to SOC L2 within 15 minutes",
+                "Consider system isolation",
+                "Notify incident response team",
+                "Begin timeline reconstruction"
+            ])
+        elif priority == 'HIGH':
+            actions.extend([
+                "Escalate to SOC L2 within 30 minutes",
+                "Monitor for additional activity",
+                "Document findings in case management",
+                "Enhanced monitoring of affected systems"
+            ])
+        elif priority == 'MEDIUM':
+            actions.extend([
+                "Continue standard monitoring",
+                "Document for trend analysis",
+                "Review in next shift briefing"
+            ])
+        else:
+            actions.extend([
+                "Log for historical analysis",
+                "Include in baseline metrics"
+            ])
+            
+        # Add specific actions based on findings
+        if any('external ip' in note.lower() for note in notes):
+            actions.append("Review firewall rules for source IP")
+            
+        if any('admin' in note.lower() for note in notes):
+            actions.append("Review admin account usage policies")
+            
+        return actions
     
     def get_mitre_techniques(self, alert):
         """Extract MITRE ATT&CK techniques for an alert"""
@@ -310,25 +465,35 @@ class AlertTriageEngine:
 if __name__ == "__main__":
     engine = AlertTriageEngine()
     
-    # Test with MITRE technique mapping
-    test_alerts = [
-        {'event_id': '4625', 'username': 'admin', 'source_ip': '203.0.113.45', 'hostname': 'WS01'},
-        {'event_id': '4672', 'username': 'jdoe', 'source_ip': '10.0.1.100', 'hostname': 'WS02'},
-        {'event_id': '4720', 'username': 'newuser', 'source_ip': '10.0.1.50', 'hostname': 'WS03'},
-        {'event_id': '4688', 'username': 'analyst', 'source_ip': '10.0.1.25', 'hostname': 'WS04', 'process_name': 'powershell.exe'}
-    ]
+    # Test incident report generation
+    test_alert = {
+        'event_id': '4625',
+        'username': 'administrator',
+        'source_ip': '203.0.113.45',
+        'hostname': 'WORKSTATION-01',
+        'timestamp': datetime.now().isoformat(),
+        'description': 'Failed authentication attempt'
+    }
     
-    print("MITRE ATT&CK Technique Analysis:")
+    print("Incident Report Generation Test:")
     print("=" * 40)
     
-    for i, alert in enumerate(test_alerts):
-        score, notes = engine.analyze_alert(alert)
-        priority = engine.get_priority(score)
-        techniques = engine.get_mitre_techniques(alert)
+    score, notes = engine.analyze_alert(test_alert)
+    priority = engine.get_priority(score)
+    
+    incident_report = engine.generate_incident_report(test_alert, score, notes, priority)
+    
+    print(f"Incident ID: {incident_report['incident_metadata']['incident_id']}")
+    print(f"Priority: {incident_report['incident_metadata']['priority']}")
+    print(f"Risk Score: {incident_report['incident_metadata']['risk_score']}")
+    print(f"Classification: {incident_report['incident_metadata']['classification']}")
+    print(f"SLA Response: {incident_report['escalation_criteria']['sla_response_time']}")
+    print(f"Escalate to L2: {incident_report['escalation_criteria']['escalate_to_l2']}")
+    
+    print(f"\nTechnical Analysis:")
+    for finding in incident_report['technical_analysis']['findings']:
+        print(f"  - {finding}")
         
-        print(f"Alert {i+1}: Score={score}, Priority={priority}")
-        print(f"  Event: {alert['event_id']}, User: {alert['username']}")
-        print(f"  MITRE Techniques: {', '.join(techniques) if techniques else 'None'}")
-        for note in notes:
-            print(f"  - {note}")
-        print()
+    print(f"\nRecommended Actions:")
+    for action in incident_report['recommended_actions']:
+        print(f"  - {action}")
