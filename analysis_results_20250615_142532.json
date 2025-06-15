@@ -1,0 +1,1034 @@
+{
+  "analysis_metadata": {
+    "analysis_time": "2025-06-15T14:25:32.360941",
+    "analyst": "SOC L1 Analyst",
+    "events_processed": 52,
+    "incidents_created": 16,
+    "data_source": "sample-data/combined_security_events.json",
+    "engine_version": "1.0",
+    "analysis_duration": 0.01
+  },
+  "incidents_created": [
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.345548",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:00:00Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for administrator"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.346111",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:00:12Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "admin",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for admin"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: admin",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: admin",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.346583",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:00:24Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "admin",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for admin"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: admin",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: admin",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.347071",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:00:36Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for administrator"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.347514",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:00:48Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "admin",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for admin"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: admin",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: admin",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.347955",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:01:00Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "admin",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for admin"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: admin",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: admin",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.348392",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:01:12Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "admin",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for admin"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: admin",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: admin",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.348827",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:01:24Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for administrator"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.349266",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:01:36Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for administrator"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.349718",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:01:48Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for administrator"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.350396",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:02:00Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for administrator"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.350970",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:02:12Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "admin",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for admin"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: admin",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: admin",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.351993",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:02:24Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for administrator"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.352533",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:02:36Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for administrator"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.353064",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "14/20",
+        "status": "OPEN",
+        "classification": "Brute Force Attack"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:02:48Z",
+        "event_id": "4625",
+        "source_ip": "203.0.113.45",
+        "username": "admin",
+        "hostname": "WORKSTATION-01",
+        "description": "Failed authentication attempt for admin"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4625: Failed authentication attempt",
+          "MITRE ATT&CK: T1110.001",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: admin",
+          "MITRE techniques: T1110.001"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: admin",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1110.001"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Initial Access"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 14/20 points. Priority classification: HIGH. Escalation required."
+    },
+    {
+      "incident_metadata": {
+        "incident_id": "INC-20250615142532",
+        "created_at": "2025-06-15T14:25:32.353582",
+        "analyst": "SOC L1 Analyst",
+        "priority": "HIGH",
+        "risk_score": "12/20",
+        "status": "OPEN",
+        "classification": "External Access Attempt"
+      },
+      "alert_details": {
+        "timestamp": "2025-06-15T09:04:00Z",
+        "event_id": "4624",
+        "source_ip": "203.0.113.45",
+        "username": "administrator",
+        "hostname": "WORKSTATION-01",
+        "description": "Successful logon after brute force attack"
+      },
+      "technical_analysis": {
+        "findings": [
+          "Event ID 4624: Successful logon",
+          "MITRE ATT&CK: T1078",
+          "External IP source: 203.0.113.45",
+          "IP in suspicious range: 203.0.113.45",
+          "Administrative account targeted: administrator",
+          "MITRE techniques: T1078"
+        ],
+        "threat_indicators": [
+          "IP: 203.0.113.45",
+          "Admin Account: administrator",
+          "Host: WORKSTATION-01",
+          "Process: winlogon.exe"
+        ],
+        "mitre_techniques": [
+          "T1078"
+        ],
+        "affected_systems": [
+          "WORKSTATION-01"
+        ],
+        "attack_stage": "Lateral Movement"
+      },
+      "escalation_criteria": {
+        "escalate_to_l2": true,
+        "escalation_reason": "Priority HIGH incident requires L2 analysis",
+        "sla_response_time": "30 minutes",
+        "notification_required": false
+      },
+      "recommended_actions": [
+        "Escalate to SOC L2 within 30 minutes",
+        "Monitor for additional activity",
+        "Document findings in case management",
+        "Enhanced monitoring of affected systems",
+        "Review firewall rules for source IP",
+        "Review admin account usage policies"
+      ],
+      "investigation_notes": "SOC L1 triage completed. Risk assessment: 12/20 points. Priority classification: HIGH. Escalation required."
+    }
+  ],
+  "correlations": {
+    "brute_force_attacks": [
+      {
+        "attack_type": "brute_force",
+        "source_ip": "203.0.113.45",
+        "failed_attempts": 15,
+        "targeted_accounts": [
+          "admin",
+          "administrator"
+        ],
+        "mitre_technique": "T1110.001",
+        "severity": "HIGH"
+      }
+    ],
+    "privilege_escalation_chains": [
+      {
+        "attack_type": "privilege_escalation",
+        "username": "intern",
+        "hostname": "WORKSTATION-03",
+        "related_events": 2,
+        "mitre_technique": "T1068",
+        "severity": "CRITICAL"
+      }
+    ],
+    "lateral_movement": [
+      {
+        "attack_type": "lateral_movement",
+        "username": "skumar",
+        "host_count": 4,
+        "hosts": [
+          "WS-04",
+          "WORKSTATION-01",
+          "WORKSTATION-03",
+          "WS-05"
+        ],
+        "mitre_technique": "T1021",
+        "severity": "HIGH"
+      },
+      {
+        "attack_type": "lateral_movement",
+        "username": "msmith",
+        "host_count": 4,
+        "hosts": [
+          "WORKSTATION-02",
+          "WORKSTATION-01",
+          "WORKSTATION-03",
+          "WS-05"
+        ],
+        "mitre_technique": "T1021",
+        "severity": "HIGH"
+      },
+      {
+        "attack_type": "lateral_movement",
+        "username": "achen",
+        "host_count": 3,
+        "hosts": [
+          "WORKSTATION-02",
+          "WORKSTATION-03",
+          "WS-04"
+        ],
+        "mitre_technique": "T1021",
+        "severity": "HIGH"
+      },
+      {
+        "attack_type": "lateral_movement",
+        "username": "jdoe",
+        "host_count": 4,
+        "hosts": [
+          "WORKSTATION-02",
+          "WORKSTATION-01",
+          "WORKSTATION-03",
+          "WS-04"
+        ],
+        "mitre_technique": "T1021",
+        "severity": "HIGH"
+      }
+    ]
+  },
+  "priority_summary": {
+    "critical": 0,
+    "high": 16,
+    "medium": 0,
+    "low": 36
+  },
+  "threat_summary": {
+    "external_ips": [
+      "203.0.113.45"
+    ],
+    "admin_accounts": [
+      "admin",
+      "administrator"
+    ],
+    "mitre_techniques": [
+      "T1059.001",
+      "T1059",
+      "T1068",
+      "T1136.001",
+      "T1105",
+      "T1071.001",
+      "T1078",
+      "T1110.001"
+    ]
+  },
+  "performance_metrics": {
+    "processing_time": 0.01,
+    "events_per_second": 3886.98,
+    "errors_encountered": 0,
+    "success_rate": 100.0
+  }
+}
