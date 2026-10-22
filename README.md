@@ -1,220 +1,73 @@
-SOC L1 Skills Demo
-Security Operations Center Alert Triage and Analysis System
+# SOC L1 Skills Demo
 
-Project Update: This repository has been rebuilt with improved code organization and documentation. The core functionality remains the same while implementing better development practices and cleaner project structure.
+An educational Python demo for Windows security event triage, risk scoring,
+MITRE ATT&CK references, and JSON incident reports. It processes normalized JSON
+records, not raw EVTX files or live SIEM feeds.
 
-Overview
-This project demonstrates SOC Level 1 analyst capabilities through practical security event analysis and incident triage. Built to showcase real-world skills in threat detection, log analysis, and security automation.
-Core Capabilities:
+## Quick start
 
-Windows Event Log analysis and correlation
-Risk-based alert prioritization
-MITRE ATT&CK technique mapping
-Automated incident documentation
-Pattern detection for common attack scenarios
+Requires Python 3.8+; no third-party packages are needed.
 
-Technical Stack
-
-Language: Python 3.8+
-Log Sources: Windows Security Events, Sysmon
-Framework: MITRE ATT&CK for threat classification
-Analysis: Multi-factor risk scoring and event correlation
-Quick Start
-Installation
-bash# Clone the repository
+```bash
 git clone https://github.com/Nmyers21/SOC-L1-Skills-Demo.git
 cd SOC-L1-Skills-Demo
+python3 scripts/generate_sample_data.py
+python3 scripts/soc_analysis.py
+python3 -m unittest discover -s tests -v
+```
 
-# Install dependencies
-pip install -r scripts/requirements.txt
-Basic Usage
-bash# Generate sample security events
-python scripts/generate_sample_data.py
+The generator writes `sample-data/combined_security_events.json`. Analysis reads
+that file and writes `analysis_results_YYYYMMDD_HHMMSS.json` in the repository
+root. Script paths are resolved relative to the repository, so scripts also work
+when launched from another directory. Generated data and results are ignored by Git.
 
-# Run complete analysis
-python scripts/soc_analysis.py
+## Input and behavior
 
-# View results
-cat analysis_results_*.json
-Project Structure
-SOC-L1-Skills-Demo/
-├── scripts/
-│   ├── soc_analysis.py         # Main analysis workflow
-│   ├── alert_triage.py         # Core triage engine
-│   ├── generate_sample_data.py # Security event generator
-│   └── requirements.txt        # Python dependencies
-├── sample-data/                # Generated security datasets
-├── docs/                       # Additional documentation
-├── investigations/             # Case study examples
-└── README.md                   # This file
-Security Analysis Features
-Event Processing
-The system analyzes multiple types of security events:
+Input must be a JSON array of event objects. Common fields are `timestamp`
+(ISO 8601), `event_id` (string or integer), `source_ip`, `username`, `hostname`,
+`logon_type`, and `process_name`. Optional process evidence includes
+`parent_process`, `destination_ip`, and `file_path`. String fields must be strings.
+Sample timestamps use UTC; legacy timestamps without offsets are treated as UTC.
+Invalid or missing timestamps are excluded from correlation.
 
-Failed Authentication (Event ID 4625) - Potential brute force attacks
-Successful Logons (Event ID 4624) - Account access monitoring
-Privilege Assignment (Event ID 4672) - Privilege escalation detection
-Account Creation (Event ID 4720) - Persistence mechanism identification
-Process Creation (Event ID 4688) - Suspicious execution monitoring
+- Brute force: at least five failed logons (4625) from one source within ten
+  minutes; ten or more attempts receive HIGH correlation severity.
+- Possible privilege escalation: privilege assignment (4672) to a non-admin
+  account with a preceding same-user, same-host successful logon within ten minutes.
+- Possible lateral movement: network or remote-interactive logons (types 3/10,
+  event 4624) across three hosts in the densest ten-minute window.
+- Individual scores combine event type, source IP, and account heuristics.
+  Office spawning PowerShell, configured suspicious destinations, and Startup
+  folder writes add risk. Scores are capped at 20. Thresholds are MEDIUM 7,
+  HIGH 12, and CRITICAL 15. HIGH/CRITICAL individual events create incident reports
+  with unique IDs and suggested response actions.
 
-Risk Scoring Algorithm
-Multi-factor analysis considers:
+The JSON output includes per-event priority counts, incident reports, correlation
+findings, threat summaries, and processing metrics. Correlation findings are
+reported separately; they do not promote individual event scores or create incidents.
+Input, processing, correlation, or output errors cause an unsuccessful CLI exit.
 
-Event Severity - Based on Windows Event ID significance
-Source Analysis - Internal vs external IP assessment
-Account Context - Administrative vs standard user evaluation
-Temporal Patterns - Business hours vs off-hours activity
-Correlation Factors - Cross-event attack pattern detection
+## Scope and limitations
 
-Attack Pattern Detection
-Brute Force Attacks
+This is a learning project, not a validated production detector. Event IDs alone
+cannot establish an attack or its MITRE technique; mappings are investigation
+hints. Event 4672 does not prove exploitation, and multi-host logons may be legitimate.
+Account-name matching and suspicious IP prefixes are simplified demo heuristics.
+The generator includes 52 events with randomized baseline activity. Documentation
+ranges and the configured suspicious destination are synthetic scenario indicators,
+not a live threat intelligence feed. There are no measured accuracy, false-positive,
+or throughput guarantees. Business-hours scoring and live ingestion are not implemented.
 
-Threshold: 5+ failed authentication attempts
-Analysis: Source IP, target accounts, timing patterns
-MITRE Mapping: T1110.001 (Password Guessing)
+Correlation reports the densest window per source/user, rather than every separate
+attack episode. Analysts must review the underlying evidence. Adapt rules, account
+allowlists, retention, and escalation practices before considering operational use.
 
-Privilege Escalation
+## Layout
 
-Detection: Special privilege assignment to standard users
-Context: Related user activity and system access
-MITRE Mapping: T1068 (Privilege Escalation)
+- `scripts/alert_triage.py`: scoring, correlation, incident reporting.
+- `scripts/generate_sample_data.py`: attack and baseline sample records.
+- `scripts/soc_analysis.py`: CLI orchestration and JSON output.
+- `tests/test_soc.py`: regression checks.
+- `.github/workflows/tests.yml`: Python compatibility and sample workflow checks.
 
-Lateral Movement
-
-Pattern: User authentication across multiple systems
-Analysis: Host count and access patterns
-MITRE Mapping: T1021 (Remote Services)
-
-Sample Output
-SOC L1 ALERT TRIAGE ENGINE
-============================================================
-Events Processed: 54
-Incidents Created: 3
-Analysis Duration: 1.2 seconds
-
-PRIORITY BREAKDOWN:
-  Critical: 1 (1.9%)
-  High: 2 (3.7%)
-  Medium: 8 (14.8%)
-  Low: 43 (79.6%)
-
-BRUTE FORCE ATTACKS DETECTED:
------------------------------------
-Attack 1:
-  Source IP: 203.0.113.45
-  Failed Attempts: 15
-  Target Accounts: admin, administrator
-  MITRE Technique: T1110.001
-  Severity: HIGH
-
-INCIDENT REPORT EXAMPLE:
-------------------------
-Incident ID: INC-20250614143045
-Priority: HIGH
-Risk Score: 12/20
-Classification: Brute Force Attack
-SLA Response: 30 minutes
-Escalation Required: Yes
-Skills Demonstrated
-SOC L1 Analyst Competencies
-
-Alert Triage: Systematic evaluation and priority assignment
-Log Analysis: Windows Event Log interpretation and correlation
-Pattern Recognition: Attack sequence identification
-Documentation: Professional incident reporting with clear escalation
-Framework Knowledge: MITRE ATT&CK technique mapping and classification
-
-Technical Implementation
-
-Python Development: Object-oriented programming with error handling
-Data Processing: JSON parsing and structured data analysis
-Algorithm Design: Multi-factor risk scoring and correlation logic
-Performance Optimization: Efficient processing of large event datasets
-Professional Documentation: Clear code comments and user guidance
-
-Configuration Options
-Risk Thresholds
-pythonrisk_thresholds = {
-    "low": 3,       # Standard monitoring
-    "medium": 7,    # Enhanced attention  
-    "high": 12,     # L2 escalation required
-    "critical": 15  # Immediate response
-}
-Detection Parameters
-pythonfailed_logon_threshold = 5      # Brute force detection
-time_window_minutes = 10        # Correlation window
-correlation_window_seconds = 300 # Event grouping
-Learning Objectives
-This project was developed to understand and demonstrate:
-
-SOC Operations: Alert triage workflows and escalation procedures
-Windows Security: Event log analysis and interpretation
-Threat Detection: Pattern recognition and attack identification
-Risk Assessment: Multi-factor analysis and scoring methodologies
-Automation: Python scripting for operational efficiency
-Documentation: Professional incident reporting standards
-
-Performance Metrics
-
-Processing Speed: 40-50 events per second
-Memory Usage: <100MB for standard datasets
-Detection Accuracy: 95%+ for configured scenarios
-False Positive Rate: <5% for known patterns
-
-System Requirements
-
-Python: 3.8 or higher
-Memory: 4GB RAM minimum
-Storage: 100MB for sample data and results
-Operating System: Windows, Linux, or macOS
-
-Development Approach
-Methodology
-
-Incremental Development: Built components systematically
-Industry Standards: Followed SOC best practices and MITRE framework
-Error Handling: Implemented robust exception management
-Testing: Validated with realistic security scenarios
-Documentation: Maintained clear code comments and user guides
-
-Known Limitations
-
-Simplified Correlation: Basic pattern detection vs advanced ML
-Static Data: Generated events vs live network feeds
-Limited Scope: Windows events only (no network device logs)
-Basic Interface: Command-line vs web dashboard
-
-Future Enhancements
-
-Enhanced correlation algorithms with machine learning
-Additional log source integration (firewall, proxy, DNS)
-Web-based dashboard for real-time monitoring
-Integration with commercial SIEM platforms
-Advanced threat hunting capabilities
-
-Career Alignment
-Target Role: SOC Level 1 Analyst
-Key Skills: Alert triage, log analysis, incident response, documentation
-This project demonstrates readiness for:
-
-Entry-level SOC analyst positions
-Security monitoring and incident response roles
-SIEM platform operations
-Threat detection and analysis functions
-
-Progression Path: L1 Analyst → L2 Analyst → Senior Analyst → Detection Engineer
-Resources and References
-
-MITRE ATT&CK Framework - Threat classification
-Windows Security Events - Event log reference
-NIST Cybersecurity Framework - Security guidelines
-SANS SOC Resources - SOC best practices
-
-Contact Information
-
-GitHub: github.com/Nmyers21
-LinkedIn: linkedin.com/in/noah-myers-6354322bb
-Email: Noah2126212@gmail.com
-
-
-This project demonstrates practical SOC analyst capabilities and readiness for entry-level cybersecurity operations roles. Built to showcase understanding of security monitoring, threat detection, and incident response procedures.
+Author: [Noah Myers](https://github.com/Nmyers21)

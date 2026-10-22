@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 SOC L1 Alert Triage - Main Analysis Workflow
 Comprehensive security event analysis and incident generation
@@ -25,7 +25,7 @@ except ImportError:
 class SOCAnalysisWorkflow:
     def __init__(self):
         self.triage_engine = AlertTriageEngine()
-        self.data_file = "sample-data/combined_security_events.json"
+        self.data_file = str(Path(__file__).resolve().parents[1] / "sample-data/combined_security_events.json")
         self.results = {
             'analysis_metadata': {},
             'incidents_created': [],
@@ -62,8 +62,14 @@ class SOCAnalysisWorkflow:
             return None
             
         try:
-            with open(self.data_file, 'r', encoding='utf-8') as f:
+            with open(str(self.data_file), 'r', encoding='utf-8') as f:
                 events = json.load(f)
+            if not isinstance(events, list) or not all(isinstance(e, dict) for e in events):
+                raise ValueError("Expected a JSON array of event objects")
+            for event in events:
+                for field in ('event_id', 'timestamp', 'username', 'hostname', 'source_ip', 'process_name'):
+                    if field in event and not isinstance(event[field], (str, int) if field == 'event_id' else str):
+                        raise ValueError(f"Invalid {field} field")
             print(f"Successfully loaded {len(events)} security events")
             return events
         except json.JSONDecodeError as e:
@@ -168,6 +174,7 @@ class SOCAnalysisWorkflow:
             
         except Exception as e:
             print(f"Error in correlation analysis: {e}")
+            self.results['performance_metrics']['errors_encountered'] += 1
             traceback.print_exc()
     
     def generate_analysis_summary(self):
@@ -177,7 +184,7 @@ class SOCAnalysisWorkflow:
             'analyst': 'SOC L1 Analyst',
             'events_processed': sum(self.results['priority_summary'].values()),
             'incidents_created': len(self.results['incidents_created']),
-            'data_source': self.data_file,
+            'data_source': str(self.data_file),
             'engine_version': '1.0',
             'analysis_duration': self.results['performance_metrics']['processing_time']
         }
@@ -298,7 +305,7 @@ class SOCAnalysisWorkflow:
     def save_results(self):
         """Save analysis results to file"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        results_file = f"analysis_results_{timestamp}.json"
+        results_file = Path(__file__).resolve().parents[1] / f"analysis_results_{timestamp}.json"
         
         try:
             with open(results_file, 'w', encoding='utf-8') as f:
@@ -306,6 +313,8 @@ class SOCAnalysisWorkflow:
             print(f"\nDetailed results saved to: {results_file}")
         except Exception as e:
             print(f"Error saving results: {e}")
+            return False
+        return True
     
     def run_analysis(self):
         """Main analysis workflow execution"""
@@ -329,7 +338,10 @@ class SOCAnalysisWorkflow:
         self.display_results()
         
         # Save results
-        self.save_results()
+        saved = self.save_results()
+        if not saved or self.results['performance_metrics']['errors_encountered']:
+            print("ANALYSIS INCOMPLETE: errors occurred")
+            return False
         
         print(f"\n" + "=" * 60)
         print("ANALYSIS COMPLETED SUCCESSFULLY")

@@ -1,12 +1,13 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 SOC Alert Triage Engine - Basic Implementation
 Author: Noah Myers
 """
 import json
 import logging
-import re
-from datetime import datetime, timedelta
+import ipaddress
+from uuid import uuid4
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 
 # Setup basic logging
@@ -61,7 +62,7 @@ class AlertTriageEngine:
     
     def generate_incident_report(self, alert, risk_score, analysis_notes, priority):
         """Generate professional incident report for SOC documentation"""
-        incident_id = f"INC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        incident_id = f"INC-{uuid4().hex}"
         
         report = {
             'incident_metadata': {
@@ -111,10 +112,10 @@ class AlertTriageEngine:
     
     def classify_incident(self, alert, notes):
         """Classify incident type based on analysis"""
-        event_id = alert.get('event_id', '')
+        event_id = str(alert.get('event_id', ''))
         
         if event_id == '4625' or any('failed' in note.lower() for note in notes):
-            return 'Brute Force Attack'
+            return 'Failed Authentication (possible password guessing)'
         elif event_id == '4672' or any('privilege' in note.lower() for note in notes):
             return 'Privilege Escalation'
         elif event_id == '4720':
@@ -152,7 +153,7 @@ class AlertTriageEngine:
     
     def determine_attack_stage(self, alert):
         """Determine attack stage based on MITRE technique"""
-        event_id = alert.get('event_id', '')
+        event_id = str(alert.get('event_id', ''))
         
         if event_id == '4625':
             return 'Initial Access'
@@ -265,8 +266,9 @@ class AlertTriageEngine:
         attacks = []
         
         for ip, events in ip_events.items():
-            failed_logons = [e for e in events if e.get('event_id') == '4625']
+            failed_logons = [e for e in events if str(e.get('event_id', '')) == '4625']
             
+            failed_logons = self.largest_time_window(failed_logons)
             if len(failed_logons) >= self.failed_logon_threshold:
                 targeted_accounts = list(set(e.get('username', '') for e in failed_logons))
                 
@@ -286,17 +288,25 @@ class AlertTriageEngine:
         escalations = []
         
         # Look for privilege assignment events
-        priv_events = [a for a in alerts if a.get('event_id') == '4672']
+        priv_events = [a for a in alerts if str(a.get('event_id', '')) == '4672']
         
         for priv_event in priv_events:
             # Check if user had other activity before privilege assignment
             username = priv_event.get('username', '')
             related_events = [
                 a for a in alerts 
-                if a.get('username') == username and a != priv_event
+                if username and a.get('username') == username
+                and a.get('hostname') == priv_event.get('hostname')
+                and str(a.get('event_id', '')) == '4624'
+                and self.event_time(a) is not None
+                and self.event_time(priv_event) is not None
+                and timedelta(0) <= self.event_time(priv_event) - self.event_time(a)
+                <= timedelta(minutes=self.time_window_minutes)
             ]
             
-            if related_events:
+            if related_events and not any(
+                admin in username.lower() for admin in self.admin_accounts
+            ):
                 escalations.append({
                     'attack_type': 'privilege_escalation',
                     'username': username,
@@ -314,7 +324,10 @@ class AlertTriageEngine:
         
         for user, events in user_events.items():
             # Look for successful logons across multiple hosts
-            successful_logons = [e for e in events if e.get('event_id') == '4624']
+            successful_logons = self.largest_time_window([
+                e for e in events if str(e.get('event_id', '')) == '4624'
+                and str(e.get('logon_type', '')) in ('3', '10')
+            ])
             unique_hosts = set(e.get('hostname', '') for e in successful_logons if e.get('hostname'))
             
             if len(unique_hosts) > 2:  # User on 3+ different systems
@@ -331,19 +344,38 @@ class AlertTriageEngine:
     
     def is_internal_ip(self, ip):
         """Check if IP address is in internal ranges"""
-        if not ip:
+        try:
+            address = ipaddress.ip_address(ip)
+        except ValueError:
             return False
-            
-        internal_patterns = [
-            r'^192\.168\.',
-            r'^10\.',
-            r'^172\.(1[6-9]|2[0-9]|3[0-1])\.',
-            r'^127\.',
-            r'^169\.254\.'
-        ]
-        
-        return any(re.match(pattern, ip) for pattern in internal_patterns)
-    
+        if address.version == 6 and address.ipv4_mapped:
+            return self.is_internal_ip(str(address.ipv4_mapped))
+        networks = ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16',
+                    '127.0.0.0/8', '169.254.0.0/16', '::1/128', 'fc00::/7', 'fe80::/10')
+        return any(address in ipaddress.ip_network(network) for network in networks)
+
+    @staticmethod
+    def event_time(event):
+        """Treat legacy timestamps without offsets as UTC; ignore invalid times."""
+        try:
+            value = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00'))
+            return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+        except (KeyError, TypeError, ValueError, AttributeError):
+            return None
+
+    def largest_time_window(self, events):
+        """Return the densest configured time window, irrespective of input order."""
+        ordered = sorted((e for e in events if self.event_time(e) is not None),
+                         key=self.event_time)
+        best = []
+        left = 0
+        for right, event in enumerate(ordered):
+            while self.event_time(event) - self.event_time(ordered[left]) > timedelta(minutes=self.time_window_minutes):
+                left += 1
+            if right - left + 1 > len(best):
+                best = ordered[left:right + 1]
+        return best
+
     def analyze_account(self, alert):
         """Analyze user account for risk factors"""
         username = alert.get('username', '').lower()
@@ -444,6 +476,22 @@ class AlertTriageEngine:
         risk_score += account_analysis['score']
         analysis_notes.extend(account_analysis['notes'])
         
+        # Score concrete execution and persistence indicators in the demo.
+        process = alert.get('process_name', '').lower().replace('\\', '/').split('/')[-1]
+        parent = alert.get('parent_process', '').lower().replace('\\', '/').split('/')[-1]
+        if process == 'powershell.exe' and parent in ('winword.exe', 'excel.exe', 'outlook.exe'):
+            risk_score += 10
+            analysis_notes.append('Suspicious Office child process: PowerShell')
+        destination = alert.get('destination_ip', '')
+        if destination and any(destination.startswith(prefix) for prefix in self.suspicious_ranges):
+            risk_score += 9
+            analysis_notes.append(f'Destination in demo suspicious range: {destination}')
+        file_path = alert.get('file_path', '').lower().replace('\\', '/')
+        if '/start menu/programs/startup/' in file_path:
+            risk_score += 10
+            analysis_notes.append('Potential persistence: file created in Startup folder')
+        risk_score = min(risk_score, 20)
+
         # Add MITRE techniques
         techniques = self.get_mitre_techniques(alert)
         if techniques:

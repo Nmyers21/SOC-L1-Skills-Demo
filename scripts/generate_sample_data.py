@@ -1,10 +1,11 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Security event data generation for SOC analysis
 Author: Noah Myers
 """
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 import random
 
 # Define basic security event types
@@ -40,7 +41,7 @@ class SecurityEventGenerator:
             target_user = random.choice(target_accounts)
             
             event = {
-                'timestamp': event_time.isoformat() + 'Z',
+                'timestamp': event_time.isoformat(),
                 'event_id': '4625',
                 'severity': 'medium',
                 'source_ip': attack_ip,
@@ -57,7 +58,7 @@ class SecurityEventGenerator:
         # One successful logon after the attack (compromise)
         success_time = base_time + timedelta(minutes=4)
         success_event = {
-            'timestamp': success_time.isoformat() + 'Z',
+            'timestamp': success_time.isoformat(),
             'event_id': '4624',
             'severity': 'high',
             'source_ip': attack_ip,
@@ -79,7 +80,7 @@ class SecurityEventGenerator:
         # Normal user logon
         logon_time = base_time + timedelta(minutes=10)
         logon_event = {
-            'timestamp': logon_time.isoformat() + 'Z',
+            'timestamp': logon_time.isoformat(),
             'event_id': '4624',
             'severity': 'low',
             'source_ip': '10.0.1.100',
@@ -95,7 +96,7 @@ class SecurityEventGenerator:
         # Privilege assignment (escalation)
         priv_time = base_time + timedelta(minutes=12)
         priv_event = {
-            'timestamp': priv_time.isoformat() + 'Z',
+            'timestamp': priv_time.isoformat(),
             'event_id': '4672',
             'severity': 'critical',
             'source_ip': '10.0.1.100',
@@ -111,7 +112,7 @@ class SecurityEventGenerator:
         # Account creation (persistence)
         create_time = base_time + timedelta(minutes=15)
         create_event = {
-            'timestamp': create_time.isoformat() + 'Z',
+            'timestamp': create_time.isoformat(),
             'event_id': '4720',
             'severity': 'critical',
             'source_ip': '10.0.1.100',
@@ -133,7 +134,7 @@ class SecurityEventGenerator:
         # PowerShell execution from Word document
         exec_time = base_time + timedelta(minutes=20)
         exec_event = {
-            'timestamp': exec_time.isoformat() + 'Z',
+            'timestamp': exec_time.isoformat(),
             'event_id': '4688',
             'severity': 'high',
             'source_ip': '10.0.1.50',
@@ -150,7 +151,7 @@ class SecurityEventGenerator:
         # Network connection to C2 server
         network_time = base_time + timedelta(minutes=21)
         network_event = {
-            'timestamp': network_time.isoformat() + 'Z',
+            'timestamp': network_time.isoformat(),
             'event_id': '3',
             'severity': 'high',
             'source_ip': '10.0.1.50',
@@ -167,7 +168,7 @@ class SecurityEventGenerator:
         # File creation in startup folder
         file_time = base_time + timedelta(minutes=22)
         file_event = {
-            'timestamp': file_time.isoformat() + 'Z',
+            'timestamp': file_time.isoformat(),
             'event_id': '11',
             'severity': 'high',
             'source_ip': '10.0.1.50',
@@ -196,7 +197,7 @@ class SecurityEventGenerator:
             # Mostly successful logons
             if random.random() < 0.9:  # 90% success rate
                 event = {
-                    'timestamp': event_time.isoformat() + 'Z',
+                    'timestamp': event_time.isoformat(),
                     'event_id': '4624',
                     'severity': 'low',
                     'source_ip': internal_ip,
@@ -209,7 +210,7 @@ class SecurityEventGenerator:
                 }
             else:  # Occasional failed logon (typo)
                 event = {
-                    'timestamp': event_time.isoformat() + 'Z',
+                    'timestamp': event_time.isoformat(),
                     'event_id': '4625',
                     'severity': 'low',
                     'source_ip': internal_ip,
@@ -228,7 +229,7 @@ class SecurityEventGenerator:
     
     def create_sample_events(self):
         """Generate comprehensive security event dataset"""
-        base_time = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
+        base_time = datetime.now(timezone.utc).replace(hour=9, minute=0, second=0, microsecond=0)
         all_events = []
         
         print("Generating security event scenarios...")
@@ -256,12 +257,12 @@ class SecurityEventGenerator:
         
         return all_events
     
-    def save_events(self, events, filename="sample-data/combined_security_events.json"):
+    def save_events(self, events, filename=None):
         """Save events to JSON file"""
-        import os
+        filename = Path(filename) if filename is not None else Path(__file__).resolve().parents[1] / 'sample-data/combined_security_events.json'
         
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        filename.parent.mkdir(parents=True, exist_ok=True)
         
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(events, f, indent=2, ensure_ascii=False)
@@ -277,4 +278,4 @@ if __name__ == "__main__":
     generator.save_events(events)
     
     print(f"\nSample events ready for analysis!")
-    print("Run: python scripts/alert_triage.py")
+    print("Run: python scripts/soc_analysis.py")
