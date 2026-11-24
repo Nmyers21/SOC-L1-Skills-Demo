@@ -6,7 +6,7 @@ records, not raw EVTX files or live SIEM feeds.
 
 ## Quick start
 
-Requires Python 3.8+; no third-party packages are needed.
+Requires Python 3.8+; Python 3.12 or newer is recommended. No third-party packages are needed.
 
 ```bash
 git clone https://github.com/Nmyers21/SOC-L1-Skills-Demo.git
