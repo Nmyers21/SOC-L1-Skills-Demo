@@ -17,7 +17,7 @@ python3 -m unittest discover -s tests -v
 ```
 
 The generator writes `sample-data/combined_security_events.json`. Analysis reads
-that file and writes `analysis_results_YYYYMMDD_HHMMSS.json` in the repository
+that file and writes `analysis_results_YYYYMMDD_HHMMSS_microseconds.json` in the repository
 root. Script paths are resolved relative to the repository, so scripts also work
 when launched from another directory. Generated data and results are ignored by Git.
 
@@ -29,13 +29,19 @@ Input must be a JSON array of event objects. Common fields are `timestamp`
 `parent_process`, `destination_ip`, and `file_path`. String fields must be strings.
 Sample timestamps use UTC; legacy timestamps without offsets are treated as UTC.
 Invalid or missing timestamps are excluded from correlation.
+Optional string fields such as `parent_process`, `destination_ip`, `file_path`,
+`description`, and `logon_id` must also be strings when supplied. Malformed IP
+strings are noted without adding external-IP risk or treating them as IP evidence.
 
 - Brute force: at least five failed logons (4625) from one source within ten
   minutes; ten or more attempts receive HIGH correlation severity.
-- Possible privilege escalation: privilege assignment (4672) to a non-admin
-  account with a preceding same-user, same-host successful logon within ten minutes.
+- Privilege assignment for review: event 4672 for an account not matching the demo's
+  admin-name heuristics, with a preceding same-user, same-host logon within ten
+  minutes. If both events supply a Logon ID, those IDs must match. This is MEDIUM
+  priority correlation context, not proof of privilege escalation or T1068.
 - Possible lateral movement: network or remote-interactive logons (types 3/10,
-  event 4624) across three hosts in the densest ten-minute window.
+  event 4624) across three hosts in the ten-minute window with the most distinct
+  hosts. A noisy single-host window must not hide a quieter multi-host window.
 - Individual scores combine event type, source IP, and account heuristics.
   Office spawning PowerShell, configured suspicious destinations, and Startup
   folder writes add risk. Scores are capped at 20. Thresholds are MEDIUM 7,
@@ -58,9 +64,12 @@ ranges and the configured suspicious destination are synthetic scenario indicato
 not a live threat intelligence feed. There are no measured accuracy, false-positive,
 or throughput guarantees. Business-hours scoring and live ingestion are not implemented.
 
-Correlation reports the densest window per source/user, rather than every separate
+Correlation reports the strongest window per source/user, rather than every separate
 attack episode. Analysts must review the underlying evidence. Adapt rules, account
 allowlists, retention, and escalation practices before considering operational use.
+Missing Logon IDs allow only an approximate user/host/time association. Event
+records are assumed to be normalized and deduplicated upstream. Generated reports
+are triage suggestions, not confirmed incidents or actions performed.
 
 ## Layout
 
@@ -69,5 +78,8 @@ allowlists, retention, and escalation practices before considering operational u
 - `scripts/soc_analysis.py`: CLI orchestration and JSON output.
 - `tests/test_soc.py`: regression checks.
 - `.github/workflows/tests.yml`: Python compatibility and sample workflow checks.
+
+See [the workflow guide](docs/README.md) for the processing steps, design choices
+and remaining improvements.
 
 Author: [Noah Myers](https://github.com/Nmyers21)

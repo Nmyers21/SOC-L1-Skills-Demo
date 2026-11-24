@@ -8,7 +8,7 @@ import logging
 import ipaddress
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -46,13 +46,13 @@ class AlertTriageEngine:
         self.event_scores = {
             '4625': {'score': 3, 'description': 'Failed authentication attempt', 'mitre': 'T1110.001'},
             '4624': {'score': 1, 'description': 'Successful logon', 'mitre': 'T1078'},
-            '4672': {'score': 5, 'description': 'Special privileges assigned', 'mitre': 'T1068'},
+            '4672': {'score': 5, 'description': 'Special privileges assigned'},
             '4648': {'score': 3, 'description': 'Explicit credential use', 'mitre': 'T1078'},
-            '4720': {'score': 6, 'description': 'User account created', 'mitre': 'T1136.001'},
-            '4688': {'score': 2, 'description': 'Process creation', 'mitre': 'T1059'},
+            '4720': {'score': 6, 'description': 'User account created', 'mitre': 'T1136'},
+            '4688': {'score': 2, 'description': 'Process creation'},
             '4732': {'score': 4, 'description': 'Member added to security group', 'mitre': 'T1098'},
-            '3': {'score': 3, 'description': 'Network connection (Sysmon)', 'mitre': 'T1071.001'},
-            '11': {'score': 2, 'description': 'File creation (Sysmon)', 'mitre': 'T1105'}
+            '3': {'score': 3, 'description': 'Network connection (Sysmon)'},
+            '11': {'score': 2, 'description': 'File creation (Sysmon)'}
         }
         
         # Known suspicious IP ranges for testing
@@ -67,7 +67,7 @@ class AlertTriageEngine:
         report = {
             'incident_metadata': {
                 'incident_id': incident_id,
-                'created_at': datetime.now().isoformat(),
+                'created_at': datetime.now(timezone.utc).isoformat(),
                 'analyst': 'SOC L1 Analyst',
                 'priority': priority,
                 'risk_score': f"{risk_score}/20",
@@ -117,7 +117,7 @@ class AlertTriageEngine:
         if event_id == '4625' or any('failed' in note.lower() for note in notes):
             return 'Failed Authentication (possible password guessing)'
         elif event_id == '4672' or any('privilege' in note.lower() for note in notes):
-            return 'Privilege Escalation'
+            return 'Special Privilege Assignment (requires investigation)'
         elif event_id == '4720':
             return 'Account Creation'
         elif any('external ip' in note.lower() for note in notes):
@@ -131,7 +131,11 @@ class AlertTriageEngine:
         
         # IP addresses
         source_ip = alert.get('source_ip', '')
-        if source_ip and not self.is_internal_ip(source_ip):
+        try:
+            valid_ip = bool(source_ip) and ipaddress.ip_address(source_ip) is not None
+        except ValueError:
+            valid_ip = False
+        if valid_ip and not self.is_internal_ip(source_ip):
             iocs.append(f"IP: {source_ip}")
             
         # Usernames
@@ -155,16 +159,8 @@ class AlertTriageEngine:
         """Determine attack stage based on MITRE technique"""
         event_id = str(alert.get('event_id', ''))
         
-        if event_id == '4625':
-            return 'Initial Access'
-        elif event_id == '4672':
-            return 'Privilege Escalation'
-        elif event_id == '4720':
-            return 'Persistence'
-        elif event_id == '4624':
-            return 'Lateral Movement'
-        else:
-            return 'Unknown'
+        # An event ID alone cannot establish an adversary's attack stage.
+        return 'Undetermined (requires investigation)'
     
     def get_sla_time(self, priority):
         """Get SLA response time based on priority"""
@@ -227,10 +223,14 @@ class AlertTriageEngine:
                 techniques.append(mitre_technique)
         
         # Add additional techniques based on alert content
-        if alert.get('process_name', '').lower() == 'powershell.exe':
+        process = alert.get('process_name', '').lower().replace('\\', '/').split('/')[-1]
+        if process == 'powershell.exe':
             techniques.append(self.mitre_mapping['powershell_execution'])
+        file_path = alert.get('file_path', '').lower().replace('\\', '/')
+        if '/start menu/programs/startup/' in file_path:
+            techniques.append(self.mitre_mapping['persistence'])
             
-        return list(set(techniques))  # Remove duplicates
+        return sorted(set(techniques))  # Stable output for review and comparisons.
     
     def correlate_alerts(self, alerts):
         """Perform correlation analysis across multiple alerts"""
@@ -270,10 +270,11 @@ class AlertTriageEngine:
             
             failed_logons = self.largest_time_window(failed_logons)
             if len(failed_logons) >= self.failed_logon_threshold:
-                targeted_accounts = list(set(e.get('username', '') for e in failed_logons))
+                targeted_accounts = sorted(set(e.get('username', '') for e in failed_logons))
                 
                 attacks.append({
                     'attack_type': 'brute_force',
+                    'assessment': 'Potential password guessing; validate authorization',
                     'source_ip': ip,
                     'failed_attempts': len(failed_logons),
                     'targeted_accounts': targeted_accounts,
@@ -296,7 +297,10 @@ class AlertTriageEngine:
             related_events = [
                 a for a in alerts 
                 if username and a.get('username') == username
+                and priv_event.get('hostname')
                 and a.get('hostname') == priv_event.get('hostname')
+                and (not a.get('logon_id') or not priv_event.get('logon_id')
+                     or a['logon_id'] == priv_event['logon_id'])
                 and str(a.get('event_id', '')) == '4624'
                 and self.event_time(a) is not None
                 and self.event_time(priv_event) is not None
@@ -308,12 +312,13 @@ class AlertTriageEngine:
                 admin in username.lower() for admin in self.admin_accounts
             ):
                 escalations.append({
-                    'attack_type': 'privilege_escalation',
+                    'attack_type': 'special_privilege_assignment',
+                    'assessment': 'Special privileges after logon; escalation is unconfirmed',
                     'username': username,
                     'hostname': priv_event.get('hostname', ''),
                     'related_events': len(related_events),
-                    'mitre_technique': self.mitre_mapping['privilege_escalation'],
-                    'severity': 'CRITICAL'
+                    'mitre_technique': None,
+                    'severity': 'MEDIUM'
                 })
                 
         return escalations
@@ -327,15 +332,17 @@ class AlertTriageEngine:
             successful_logons = self.largest_time_window([
                 e for e in events if str(e.get('event_id', '')) == '4624'
                 and str(e.get('logon_type', '')) in ('3', '10')
-            ])
+                and e.get('hostname')
+            ], distinct_field='hostname')
             unique_hosts = set(e.get('hostname', '') for e in successful_logons if e.get('hostname'))
             
             if len(unique_hosts) > 2:  # User on 3+ different systems
                 movements.append({
                     'attack_type': 'lateral_movement',
+                    'assessment': 'Potential remote-service activity; validate business use',
                     'username': user,
                     'host_count': len(unique_hosts),
-                    'hosts': list(unique_hosts),
+                    'hosts': sorted(unique_hosts),
                     'mitre_technique': self.mitre_mapping['lateral_movement'],
                     'severity': 'HIGH'
                 })
@@ -363,18 +370,29 @@ class AlertTriageEngine:
         except (KeyError, TypeError, ValueError, AttributeError):
             return None
 
-    def largest_time_window(self, events):
-        """Return the densest configured time window, irrespective of input order."""
+    def largest_time_window(self, events, distinct_field=None):
+        """Find the busiest window by event count or distinct field values."""
         ordered = sorted((e for e in events if self.event_time(e) is not None),
                          key=self.event_time)
-        best = []
+        best_bounds = (0, 0)
+        best_score = 0
+        counts = Counter()
         left = 0
         for right, event in enumerate(ordered):
+            if distinct_field:
+                counts[event[distinct_field]] += 1
             while self.event_time(event) - self.event_time(ordered[left]) > timedelta(minutes=self.time_window_minutes):
+                if distinct_field:
+                    value = ordered[left][distinct_field]
+                    counts[value] -= 1
+                    if counts[value] == 0:
+                        del counts[value]
                 left += 1
-            if right - left + 1 > len(best):
-                best = ordered[left:right + 1]
-        return best
+            score = len(counts) if distinct_field else right - left + 1
+            if score > best_score:
+                best_bounds = (left, right + 1)
+                best_score = score
+        return ordered[best_bounds[0]:best_bounds[1]]
 
     def analyze_account(self, alert):
         """Analyze user account for risk factors"""
@@ -420,6 +438,11 @@ class AlertTriageEngine:
         analysis = {'score': 0, 'notes': []}
         
         if not source_ip:
+            return analysis
+        try:
+            ipaddress.ip_address(source_ip)
+        except ValueError:
+            analysis['notes'].append(f'Invalid source IP; no IP risk assigned: {source_ip}')
             return analysis
             
         # External IP check

@@ -38,6 +38,33 @@ class DetectionTests(unittest.TestCase):
         ids = [self.engine.generate_incident_report({}, 12, [], 'HIGH')['incident_metadata']['incident_id'] for _ in range(100)]
         self.assertEqual(len(set(ids)), 100)
 
+    def test_lateral_window_counts_hosts_not_only_events(self):
+        # A noisy single-host window must not hide a quieter multi-host window.
+        events = [dict(event_id=4624, timestamp=f'2026-01-01T00:00:{i:02}Z',
+                       username='alice', hostname='busy-host', logon_type=3)
+                  for i in range(10)]
+        events += [dict(event_id=4624, timestamp=f'2026-01-01T01:0{i}:00Z',
+                        username='alice', hostname=f'host{i}', logon_type=3)
+                   for i in range(3)]
+        findings = self.engine.correlate_alerts(list(reversed(events)))
+        self.assertEqual(findings['lateral_movement'][0]['host_count'], 3)
+
+    def test_privilege_assignment_does_not_prove_exploitation(self):
+        alert = {'event_id': 4672}
+        self.assertNotIn('T1068', self.engine.get_mitre_techniques(alert))
+        self.assertIn('requires investigation', self.engine.classify_incident(alert, []))
+        logon = dict(event_id=4624, username='alice', timestamp='2026-01-01T00:00:00Z')
+        privilege = dict(logon, event_id=4672)
+        self.assertFalse(self.engine.detect_privilege_escalation([logon, privilege]))
+        logon.update(hostname='host1', logon_id='0x1')
+        privilege.update(hostname='host1', logon_id='0x2')
+        self.assertFalse(self.engine.detect_privilege_escalation([logon, privilege]))
+
+    def test_invalid_address_is_not_external_threat_evidence(self):
+        alert = {'source_ip': '10.invalid'}
+        self.assertEqual(self.engine.analyze_source_ip(alert)['score'], 0)
+        self.assertEqual(self.engine.extract_iocs(alert), [])
+
     def test_address_validation(self):
         for address in ['10.0.0.1', '172.31.0.1', '::1', 'fd00::1', '::ffff:192.168.1.2']:
             self.assertTrue(self.engine.is_internal_ip(address), address)
@@ -55,7 +82,9 @@ class DetectionTests(unittest.TestCase):
             target = Path(directory) / 'events.json'
             workflow = SOCAnalysisWorkflow()
             workflow.data_file = str(target)
-            for payload in [{}, [None], [{'username': None}]]:
+            for payload in [{}, [None], [{'username': None}],
+                            [{'parent_process': None}], [{'file_path': []}],
+                            [{'destination_ip': 42}], [{'event_id': True}]]:
                 target.write_text(json.dumps(payload))
                 self.assertIsNone(workflow.load_security_events())
 

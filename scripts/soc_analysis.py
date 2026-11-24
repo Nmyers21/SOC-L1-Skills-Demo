@@ -6,6 +6,7 @@ Author: Noah Myers
 """
 
 import json
+import ipaddress
 import sys
 import os
 from datetime import datetime
@@ -67,8 +68,11 @@ class SOCAnalysisWorkflow:
             if not isinstance(events, list) or not all(isinstance(e, dict) for e in events):
                 raise ValueError("Expected a JSON array of event objects")
             for event in events:
-                for field in ('event_id', 'timestamp', 'username', 'hostname', 'source_ip', 'process_name'):
-                    if field in event and not isinstance(event[field], (str, int) if field == 'event_id' else str):
+                for field in ('event_id', 'logon_type', 'timestamp', 'username', 'hostname',
+                              'source_ip', 'process_name', 'parent_process', 'destination_ip',
+                              'file_path', 'description', 'logon_id'):
+                    if field in event and (isinstance(event[field], bool) or not isinstance(
+                            event[field], (str, int) if field in ('event_id', 'logon_type') else str)):
                         raise ValueError(f"Invalid {field} field")
             print(f"Successfully loaded {len(events)} security events")
             return events
@@ -103,7 +107,11 @@ class SOCAnalysisWorkflow:
                 
                 # Track threat indicators
                 source_ip = event.get('source_ip', '')
-                if source_ip and not self.triage_engine.is_internal_ip(source_ip):
+                try:
+                    valid_ip = bool(source_ip) and ipaddress.ip_address(source_ip) is not None
+                except ValueError:
+                    valid_ip = False
+                if valid_ip and not self.triage_engine.is_internal_ip(source_ip):
                     self.results['threat_summary']['external_ips'].add(source_ip)
                     
                 username = event.get('username', '').lower()
@@ -167,10 +175,10 @@ class SOCAnalysisWorkflow:
             total_correlations = brute_force_count + privilege_esc_count + lateral_move_count
             
             print(f"Correlation analysis complete:")
-            print(f"  - Brute force attacks: {brute_force_count}")
-            print(f"  - Privilege escalations: {privilege_esc_count}")
-            print(f"  - Lateral movement: {lateral_move_count}")
-            print(f"  - Total attack patterns: {total_correlations}")
+            print(f"  - Potential password guessing: {brute_force_count}")
+            print(f"  - Special privilege assignments for review: {privilege_esc_count}")
+            print(f"  - Potential lateral movement: {lateral_move_count}")
+            print(f"  - Total patterns for investigation: {total_correlations}")
             
         except Exception as e:
             print(f"Error in correlation analysis: {e}")
@@ -238,7 +246,7 @@ class SOCAnalysisWorkflow:
         correlations = self.results['correlations']
         
         if correlations.get('brute_force_attacks'):
-            print(f"\nBRUTE FORCE ATTACKS DETECTED:")
+            print(f"\nPOTENTIAL PASSWORD GUESSING:")
             print("-" * 35)
             for i, attack in enumerate(correlations['brute_force_attacks'], 1):
                 print(f"Attack {i}:")
@@ -250,19 +258,19 @@ class SOCAnalysisWorkflow:
                 print()
                 
         if correlations.get('privilege_escalation_chains'):
-            print(f"PRIVILEGE ESCALATION DETECTED:")
+            print(f"SPECIAL PRIVILEGE ASSIGNMENT FOR REVIEW:")
             print("-" * 32)
             for i, escalation in enumerate(correlations['privilege_escalation_chains'], 1):
                 print(f"Escalation {i}:")
                 print(f"  Username: {escalation['username']}")
                 print(f"  Hostname: {escalation['hostname']}")
                 print(f"  Related Events: {escalation['related_events']}")
-                print(f"  MITRE Technique: {escalation['mitre_technique']}")
+                print(f"  MITRE Technique: {escalation['mitre_technique'] or 'Not established'}")
                 print(f"  Severity: {escalation['severity']}")
                 print()
                 
         if correlations.get('lateral_movement'):
-            print(f"LATERAL MOVEMENT DETECTED:")
+            print(f"POTENTIAL LATERAL MOVEMENT:")
             print("-" * 26)
             for i, movement in enumerate(correlations['lateral_movement'], 1):
                 print(f"Movement {i}:")
@@ -304,7 +312,7 @@ class SOCAnalysisWorkflow:
     
     def save_results(self):
         """Save analysis results to file"""
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
         results_file = Path(__file__).resolve().parents[1] / f"analysis_results_{timestamp}.json"
         
         try:
